@@ -1,3 +1,4 @@
+// Render PayPal button (default)
 window.paypal
   .Buttons({
     style: {
@@ -17,8 +18,6 @@ window.paypal
           headers: {
             "Content-Type": "application/json",
           },
-          // use the "body" param to optionally pass additional order information
-          // like product ids and quantities
           body: JSON.stringify({
             cart: [
               {
@@ -56,26 +55,16 @@ window.paypal
         });
 
         const orderData = await response.json();
-        // Three cases to handle:
-        //   (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
-        //   (2) Other non-recoverable errors -> Show a failure message
-        //   (3) Successful transaction -> Show confirmation or thank you message
 
         const errorDetail = orderData?.details?.[0];
 
         if (errorDetail?.issue === "INSTRUMENT_DECLINED") {
-          // (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
-          // recoverable state, per
-          // https://developer.paypal.com/docs/checkout/standard/customize/handle-funding-failures/
           return actions.restart();
         } else if (errorDetail) {
-          // (2) Other non-recoverable errors -> Show a failure message
           throw new Error(`${errorDetail.description} (${orderData.debug_id})`);
         } else if (!orderData.purchase_units) {
           throw new Error(JSON.stringify(orderData));
         } else {
-          // (3) Successful transaction -> Show confirmation or thank you message
-          // Or go to another URL:  actions.redirect('thank_you.html');
           const transaction =
             orderData?.purchase_units?.[0]?.payments?.captures?.[0] ||
             orderData?.purchase_units?.[0]?.payments?.authorizations?.[0];
@@ -98,6 +87,90 @@ window.paypal
     },
   })
   .render("#paypal-button-container");
+
+// Render Trustly Payment Mark
+if (window.paypal && window.paypal.Marks && window.paypal.FUNDING.TRUSTLY) {
+  window.paypal.Marks({
+    fundingSource: window.paypal.FUNDING.TRUSTLY,
+  }).render("#trustly-mark");
+}
+
+// Render Trustly Payment Fields
+if (window.paypal && window.paypal.PaymentFields && window.paypal.FUNDING.TRUSTLY) {
+  window.paypal.PaymentFields({
+    fundingSource: window.paypal.FUNDING.TRUSTLY,
+    style: {
+      variables: {},
+      rules: {},
+    },
+    onInit: (data, actions) => {
+      const form = document.querySelector("form.paypal-payment-form");
+      if (form) {
+        form.addEventListener("submit", (e) => {
+          const formData = new FormData(form);
+          const paymentSource = formData.get("payment-option");
+          if (paymentSource === window.paypal.FUNDING.TRUSTLY) {
+            e.preventDefault();
+            actions.validate().then((valid) => {
+              if (valid) {
+                window.location.href = `/second-page.html?payment-option=${window.paypal.FUNDING.TRUSTLY}`;
+              }
+            });
+          }
+        });
+      }
+    },
+    fields: {
+      name: {
+        value: "John Doe",
+      },
+    },
+  }).render("#trustly-container");
+}
+
+// Render Trustly Button
+if (window.paypal && window.paypal.FUNDING && window.paypal.FUNDING.TRUSTLY) {
+  window.paypal.Buttons({
+    fundingSource: window.paypal.FUNDING.TRUSTLY,
+    style: {
+      label: "pay",
+    },
+    async createOrder() {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cart: [
+            {
+              id: "YOUR_PRODUCT_ID",
+              quantity: "YOUR_PRODUCT_QUANTITY",
+            },
+          ],
+          payment_source: {
+            trustly: {},
+          },
+        }),
+      });
+      const order = await response.json();
+      return order.id;
+    },
+    onApprove(data) {
+      // Show a thank you message or redirect
+      const element = document.getElementById('trustly-btn');
+      if (element) {
+        element.innerHTML = '<h3>Thank you for your payment!</h3>';
+      }
+    },
+    onCancel(data, actions) {
+      console.log(`Order Canceled - ID: ${data.orderID}`);
+    },
+    onError(err) {
+      console.error(err);
+    }
+  }).render("#trustly-btn");
+}
 
 // Example function to show a result to the user. Your site's UI library can be used instead.
 function resultMessage(message) {

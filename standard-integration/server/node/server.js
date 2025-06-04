@@ -46,8 +46,9 @@ const createOrder = async (cart) => {
       purchaseUnits: [
         {
           amount: {
-            currencyCode: "USD",
-            value: "100.00",
+            //currencyCode: "USD",
+            currencyCode: "SEK",
+            value: "1000.00",
           },
         },
       ],

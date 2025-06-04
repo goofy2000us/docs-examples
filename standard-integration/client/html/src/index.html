@@ -14,7 +14,19 @@
     <div id="paypal-button-container" class="paypal-button-container"></div>
     <p id="result-message"></p>
 
-    <script src="https://www.paypal.com/sdk/js?client-id=%PAYPAL_CLIENT_ID%&buyer-country=US&currency=USD&components=buttons&enable-funding=venmo"></script>
+    <!-- Add this where you want the Trustly button to appear -->
+    <div id="trustly-button-container"></div>
+
+    <form class="paypal-payment-form">
+      <div id="trustly-mark"></div>
+      <div id="trustly-container"></div>
+      <input type="radio" name="payment-option" value="trustly" checked /> Trustly
+      <button type="submit">Continue with Trustly</button>
+    </form>
+    <div id="trustly-btn"></div>
+
+    <!--<script src="https://www.paypal.com/sdk/js?client-id=%PAYPAL_CLIENT_ID%&buyer-country=US&currency=USD&components=buttons&enable-funding=venmo"></script>-->
+    <script src="https://www.paypal.com/sdk/js?client-id=%PAYPAL_CLIENT_ID%&components=buttons,payment-fields,marks,funding-eligibility&enable-funding=trustly&currency=SEK&locale=nl_NL"></script>
     <script src="app.js"></script>
   </body>
 </html>
